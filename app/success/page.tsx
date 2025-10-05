@@ -8,6 +8,8 @@ function SuccessContent() {
   const [token, setToken] = useState('')
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
+  const [testing, setTesting] = useState(false)
+  const [testResult, setTestResult] = useState<any>(null)
 
   useEffect(() => {
     const accessToken = searchParams.get('access_token')
@@ -29,6 +31,27 @@ function SuccessContent() {
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
       console.error('Failed to copy:', err)
+    }
+  }
+
+  const testToken = async () => {
+    setTesting(true)
+    setTestResult(null)
+    
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE || 'https://api.systemquest.dev'
+      const response = await fetch(`${apiBase}/v1/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      const data = await response.json()
+      setTestResult({ success: response.ok, data })
+    } catch (err) {
+      setTestResult({ success: false, error: 'Network error' })
+    } finally {
+      setTesting(false)
     }
   }
 
@@ -162,22 +185,60 @@ function SuccessContent() {
         </div>
 
         {/* Actions */}
-        <div className="flex gap-4">
+        <div className="flex gap-4 mb-6">
           <a
             href="/"
             className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 font-semibold py-3 px-6 rounded-lg transition-all text-center"
           >
             Get New Token
           </a>
-          <a
-            href="https://api.systemquest.dev/v1/auth/me"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all text-center"
+          <button
+            onClick={testToken}
+            disabled={testing}
+            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Test Token →
-          </a>
+            {testing ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Testing...
+              </span>
+            ) : (
+              'Test Token 🧪'
+            )}
+          </button>
         </div>
+
+        {/* Test Result */}
+        {testResult && (
+          <div className={`p-4 rounded-lg ${testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                {testResult.success ? (
+                  <svg className="h-6 w-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+              </div>
+              <div className="ml-3 flex-1">
+                <h3 className={`text-sm font-medium ${testResult.success ? 'text-green-800' : 'text-red-800'}`}>
+                  {testResult.success ? '✅ Token is valid!' : '❌ Token test failed'}
+                </h3>
+                <div className="mt-2">
+                  <pre className="text-xs bg-white p-3 rounded overflow-auto max-h-40">
+                    {JSON.stringify(testResult.data || testResult.error, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="mt-8 pt-6 border-t border-gray-200 text-center text-xs text-gray-500">
