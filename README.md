@@ -6,8 +6,9 @@
 
 This tool provides a user-friendly interface to:
 - Authenticate with GitHub OAuth
-- Obtain JWT access tokens
+- Obtain JWT access tokens **and refresh tokens**
 - Copy tokens for API testing
+- Test token refresh flow
 - Use in development and testing environments
 
 **Note**: This is a temporary tool. It will be deprecated once the main frontend application (`www.systemquest.dev`) is developed.

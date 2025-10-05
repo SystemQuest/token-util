@@ -6,19 +6,25 @@ import { useSearchParams } from 'next/navigation'
 function SuccessContent() {
   const searchParams = useSearchParams()
   const [token, setToken] = useState('')
+  const [refreshToken, setRefreshToken] = useState('')
   const [copied, setCopied] = useState(false)
+  const [copiedRefresh, setCopiedRefresh] = useState(false)
   const [error, setError] = useState('')
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<any>(null)
 
   useEffect(() => {
     const accessToken = searchParams.get('access_token')
+    const refreshTokenParam = searchParams.get('refresh_token')
     const errorParam = searchParams.get('error')
     
     if (errorParam) {
       setError(decodeURIComponent(errorParam))
     } else if (accessToken) {
       setToken(accessToken)
+      if (refreshTokenParam) {
+        setRefreshToken(refreshTokenParam)
+      }
     } else {
       setError('No token received')
     }
@@ -29,6 +35,16 @@ function SuccessContent() {
       await navigator.clipboard.writeText(token)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+    }
+  }
+
+  const copyRefreshToken = async () => {
+    try {
+      await navigator.clipboard.writeText(refreshToken)
+      setCopiedRefresh(true)
+      setTimeout(() => setCopiedRefresh(false), 2000)
     } catch (err) {
       console.error('Failed to copy:', err)
     }
@@ -106,10 +122,10 @@ function SuccessContent() {
             </svg>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            🎉 Token Retrieved Successfully!
+            🎉 Tokens Retrieved Successfully!
           </h1>
           <p className="text-gray-600">
-            Your JWT token is ready to use
+            {refreshToken ? 'Your access and refresh tokens are ready to use' : 'Your JWT token is ready to use'}
           </p>
         </div>
 
@@ -148,19 +164,78 @@ function SuccessContent() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
-                Copy Token
+                Copy Access Token
               </span>
             )}
           </button>
         </div>
 
-        {/* Usage Example */}
+        {/* Refresh Token Display */}
+        {refreshToken && (
+          <div className="bg-purple-900 rounded-lg p-6 mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold text-purple-300 uppercase tracking-wide">
+                JWT Refresh Token
+              </span>
+              <span className="text-xs text-purple-300">
+                ✓ Valid for 7 days
+              </span>
+            </div>
+            <div className="bg-purple-800 rounded p-4 mb-4">
+              <code className="text-purple-200 text-sm break-all font-mono leading-relaxed">
+                {refreshToken}
+              </code>
+            </div>
+            <button
+              onClick={copyRefreshToken}
+              className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] ${
+                copiedRefresh
+                  ? 'bg-green-500 text-white'
+                  : 'bg-white text-purple-900 hover:bg-purple-50'
+              }`}
+            >
+              {copiedRefresh ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Copied!
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Copy Refresh Token
+                </span>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Usage Examples */}
         <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded mb-6">
-          <h3 className="font-semibold text-blue-900 mb-2">Usage Example:</h3>
-          <code className="text-sm text-blue-800 block bg-blue-100 p-3 rounded font-mono">
-            curl -H "Authorization: Bearer YOUR_TOKEN" \<br />
-            &nbsp;&nbsp;https://api.systemquest.dev/v1/auth/me
-          </code>
+          <h3 className="font-semibold text-blue-900 mb-3">Usage Examples:</h3>
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs text-blue-700 mb-1">1. Test Access Token:</p>
+              <code className="text-sm text-blue-800 block bg-blue-100 p-3 rounded font-mono">
+                curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \<br />
+                &nbsp;&nbsp;https://api.systemquest.dev/v1/auth/me
+              </code>
+            </div>
+            {refreshToken && (
+              <div>
+                <p className="text-xs text-blue-700 mb-1">2. Refresh Access Token:</p>
+                <code className="text-sm text-blue-800 block bg-blue-100 p-3 rounded font-mono">
+                  curl -X POST \<br />
+                  &nbsp;&nbsp;-H "Content-Type: application/json" \<br />
+                  &nbsp;&nbsp;-d '{"{"}"refreshToken":"YOUR_REFRESH_TOKEN"{"}"}' \<br />
+                  &nbsp;&nbsp;https://api.systemquest.dev/v1/auth/refresh
+                </code>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Security Warning */}
@@ -175,9 +250,11 @@ function SuccessContent() {
               <h3 className="text-sm font-medium text-yellow-800">Security Reminder</h3>
               <div className="mt-2 text-sm text-yellow-700">
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Do not share this token with anyone</li>
-                  <li>Token expires in 1 hour</li>
+                  <li>Do not share these tokens with anyone</li>
+                  <li>Access token expires in 1 hour</li>
+                  {refreshToken && <li>Refresh token expires in 7 days</li>}
                   <li>Do not commit to version control</li>
+                  {refreshToken && <li>Use refresh token only when access token expires</li>}
                 </ul>
               </div>
             </div>
